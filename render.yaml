@@ -11,5 +11,3 @@ services:
         value: "False"
       - key: SECRET_KEY
         generateValue: true
-      - key: DATABASE_URL # Optional: update if using external DB
-        value: "sqlite:///app/backend/db.sqlite3"

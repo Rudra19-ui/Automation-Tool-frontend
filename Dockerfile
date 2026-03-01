@@ -25,6 +25,11 @@ ENV PORT 8080
 # Set work directory
 WORKDIR /app
 
+# Ensure static directory exists and remove default nginx config
+RUN mkdir -p /app/backend/staticfiles && \
+    rm -f /etc/nginx/sites-enabled/default && \
+    rm -f /etc/nginx/conf.d/default.conf
+
 # Install backend dependencies
 COPY backend/requirements.txt ./backend/
 RUN pip install --no-cache-dir -r ./backend/requirements.txt gunicorn
