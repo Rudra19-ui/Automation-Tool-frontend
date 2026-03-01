@@ -12,12 +12,10 @@ services:
       - key: SECRET_KEY
         generateValue: true
 
-  # Frontend Static Site (or Web Service if using Nginx Dockerfile)
-  # Option A: Web Service using Dockerfile
+  # Frontend Web Service using Docker
   - type: web
     name: automation-tool-frontend
     env: docker
     dockerContext: frontend
-    dockerfilePath: Dockerfile
-    rootDir: frontend
+    dockerfilePath: Dockerfile # This will be relative to dockerContext!
     plan: free
