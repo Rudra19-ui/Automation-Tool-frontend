@@ -1,0 +1,30 @@
+# Backend
+backend/*.log
+backend/*.pot
+backend/*.pyc
+backend/__pycache__/
+backend/local_settings.py
+backend/db.sqlite3
+backend/db.sqlite3-journal
+backend/media
+backend/.venv/
+backend/venv/
+backend/env/
+backend/.env
+
+# Frontend
+frontend/node_modules
+frontend/dist
+frontend/.git
+frontend/.gitignore
+frontend/Dockerfile
+frontend/.dockerignore
+frontend/build_error.log
+frontend/build_success.log
+
+# Workspace
+.vscode/
+.idea/
+*.swp
+*.bak
+.DS_Store

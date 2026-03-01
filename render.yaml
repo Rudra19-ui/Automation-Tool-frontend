@@ -1,0 +1,23 @@
+services:
+  # Backend Web Service
+  - type: web
+    name: automation-tool-backend
+    env: python
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "python manage.py migrate && gunicorn automater.wsgi:application"
+    rootDir: backend
+    envVars:
+      - key: DEBUG
+        value: "False"
+      - key: SECRET_KEY
+        generateValue: true
+
+  # Frontend Static Site (or Web Service if using Nginx Dockerfile)
+  # Option A: Web Service using Dockerfile
+  - type: web
+    name: automation-tool-frontend
+    env: docker
+    dockerContext: frontend
+    dockerfilePath: Dockerfile
+    rootDir: frontend
+    plan: free
