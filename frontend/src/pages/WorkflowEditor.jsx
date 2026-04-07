@@ -118,14 +118,31 @@ export default function WorkflowEditor({ workflowId }) {
     const nodes = wf?.json_definition?.nodes || [];
     for (const node of nodes) {
       if (node.type === "email") {
-        const { to, subject, body } = node.data || {};
-        if (!to || !subject || !body) {
-          alert(`Email Node (${node.data?.label || node.id}) is missing required fields.`);
+        const { manual_emails, excel_file, subject, body } = node.data || {};
+        
+        // 1. Basic check for subject and body
+        if (!subject || !body) {
+          alert(`Email Node (${node.data?.label || node.id}) is missing required fields (Subject or Body).`);
           return;
         }
-        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)) {
-          alert(`Email Node (${node.data?.label || node.id}) has an invalid recipient email address.`);
+
+        // 2. Check for recipients (either manual or excel)
+        const hasManual = Array.isArray(manual_emails) && manual_emails.some(email => email && email.trim() !== "");
+        const hasExcel = excel_file && excel_file.data;
+
+        if (!hasManual && !hasExcel) {
+          alert(`Email Node (${node.data?.label || node.id}) is missing recipients. Add manual emails or upload an Excel file.`);
           return;
+        }
+
+        // 3. Optional: Validate manual email formats
+        if (hasManual && !hasExcel) {
+          for (const email of manual_emails) {
+            if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+              alert(`Email Node (${node.data?.label || node.id}) contains an invalid email address: ${email}`);
+              return;
+            }
+          }
         }
       }
     }
