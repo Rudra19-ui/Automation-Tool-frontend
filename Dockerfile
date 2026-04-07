@@ -33,7 +33,7 @@ RUN mkdir -p /app/backend/staticfiles && \
 
 # Install backend dependencies
 COPY backend/requirements.txt ./backend/
-RUN pip install --no-cache-dir -r ./backend/requirements.txt gunicorn
+RUN pip install --no-cache-dir -r ./backend/requirements.txt
 
 # Copy backend code
 COPY backend/ ./backend/

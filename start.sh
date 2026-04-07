@@ -5,10 +5,18 @@ envsubst '$PORT' < /etc/nginx/conf.d/default.conf.template > /etc/nginx/conf.d/d
 
 # Start Gunicorn in the background
 echo "Starting Gunicorn..."
+mkdir -p /app/backend/staticfiles
 cd /app/backend
 python manage.py collectstatic --noinput
 python manage.py migrate --noinput
-gunicorn automater.wsgi:application --bind 127.0.0.1:8000 --access-logfile - --error-logfile - &
+echo "Gunicorn starting..."
+gunicorn automater.wsgi:application \
+    --bind 127.0.0.1:8000 \
+    --workers 2 \
+    --threads 4 \
+    --timeout 120 \
+    --access-logfile - \
+    --error-logfile - &
 
 # Check if Gunicorn is running
 sleep 2
