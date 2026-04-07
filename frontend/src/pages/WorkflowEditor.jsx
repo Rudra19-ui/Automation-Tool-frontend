@@ -8,14 +8,49 @@ import { getWorkflow, updateWorkflow, runWorkflow, aiGenerateWorkflow } from "..
 
 export default function WorkflowEditor({ workflowId }) {
   const [wf, setWf] = useState(null);
-  const [selectedNode, setSelectedNode] = useState(null);
+  const [selectedNodeId, setSelectedNodeId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [saving, setSaving] = useState(false);
   const [running, setRunning] = useState(false);
   const [aiPrompt, setAiPrompt] = useState("");
   const [showAiModal, setShowAiModal] = useState(false);
+  const [darkMode, setDarkMode] = useState(false);
+  const [panelHeight, setPanelHeight] = useState(300);
+  const isResizing = useRef(false);
   const saveTimeoutRef = useRef(null);
+
+  const startResizing = useCallback((e) => {
+    isResizing.current = true;
+    document.addEventListener("mousemove", handleMouseMove);
+    document.addEventListener("mouseup", stopResizing);
+    document.body.style.cursor = "row-resize";
+    document.body.style.userSelect = "none";
+  }, []);
+
+  const stopResizing = useCallback(() => {
+    isResizing.current = false;
+    document.removeEventListener("mousemove", handleMouseMove);
+    document.removeEventListener("mouseup", stopResizing);
+    document.body.style.cursor = "default";
+    document.body.style.userSelect = "auto";
+  }, []);
+
+  const handleMouseMove = useCallback((e) => {
+    if (!isResizing.current) return;
+    const newHeight = window.innerHeight - e.clientY;
+    if (newHeight > 100 && newHeight < window.innerHeight - 200) {
+      setPanelHeight(newHeight);
+    }
+  }, []);
+
+  const stretchToTop = () => {
+    if (panelHeight > window.innerHeight - 250) {
+      setPanelHeight(300); // Toggle back to default
+    } else {
+      setPanelHeight(window.innerHeight - 200);
+    }
+  };
 
   useEffect(() => {
     setLoading(true);
@@ -66,7 +101,6 @@ export default function WorkflowEditor({ workflowId }) {
   const onUpdateNode = (updatedNode) => {
     const nodes = (wf?.json_definition?.nodes || []).map((n) => (n.id === updatedNode.id ? updatedNode : n));
     onUpdate({ nodes, edges: wf?.json_definition?.edges || [] });
-    setSelectedNode(updatedNode);
   };
 
   const onDeleteNode = (nodeToDelete) => {
@@ -76,10 +110,26 @@ export default function WorkflowEditor({ workflowId }) {
       (e) => e.source !== nodeToDelete.id && e.target !== nodeToDelete.id
     );
     onUpdate({ nodes, edges });
-    setSelectedNode(null);
+    setSelectedNodeId(null);
   };
 
   const onRun = async () => {
+    // Basic validation before running
+    const nodes = wf?.json_definition?.nodes || [];
+    for (const node of nodes) {
+      if (node.type === "email") {
+        const { to, subject, body } = node.data || {};
+        if (!to || !subject || !body) {
+          alert(`Email Node (${node.data?.label || node.id}) is missing required fields.`);
+          return;
+        }
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)) {
+          alert(`Email Node (${node.data?.label || node.id}) has an invalid recipient email address.`);
+          return;
+        }
+      }
+    }
+
     setRunning(true);
     try {
       await runWorkflow(workflowId);
@@ -106,8 +156,6 @@ export default function WorkflowEditor({ workflowId }) {
       setSaving(false);
     }
   };
-
-  const [darkMode, setDarkMode] = useState(false);
 
   const toggleDarkMode = () => {
     setDarkMode(!darkMode);
@@ -145,6 +193,8 @@ export default function WorkflowEditor({ workflowId }) {
       </div>
     );
   }
+
+  const selectedNode = (wf?.json_definition?.nodes || []).find(n => n.id === selectedNodeId);
 
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-slate-50 font-sans">
@@ -209,11 +259,35 @@ export default function WorkflowEditor({ workflowId }) {
         {/* Canvas Area */}
         <main className="flex-1 relative flex flex-col bg-slate-100">
           <div className="flex-1 relative">
-            <WorkflowBuilder value={wf?.json_definition} onChange={onUpdate} onNodeSelect={setSelectedNode} />
+            <WorkflowBuilder 
+              value={wf?.json_definition} 
+              onChange={onUpdate} 
+              onNodeSelect={(node) => setSelectedNodeId(node.id)} 
+            />
           </div>
 
           {/* Logs Panel */}
-          <div className="h-[300px] border-t bg-white overflow-hidden flex flex-col font-display">
+          <div 
+            style={{ height: `${panelHeight}px` }} 
+            className="border-t bg-white overflow-hidden flex flex-col font-display relative group"
+          >
+            {/* Resize Handle */}
+            <div 
+              onMouseDown={startResizing}
+              className="absolute top-0 left-0 right-0 h-1.5 cursor-row-resize bg-transparent hover:bg-blue-500/30 transition-colors z-40"
+            />
+            
+            {/* Stretch Button */}
+            <button 
+              onClick={stretchToTop}
+              className="absolute top-4 right-10 z-40 p-1.5 rounded-lg bg-slate-50 text-slate-400 hover:text-blue-500 hover:bg-blue-50 transition-all opacity-0 group-hover:opacity-100"
+              title={panelHeight > 500 ? "Restore size" : "Stretch to top"}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className={`h-4 w-4 transition-transform duration-300 ${panelHeight > 500 ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 11l7-7 7 7M5 19l7-7 7 7" />
+              </svg>
+            </button>
+
             <ExecutionLogs workflowId={wf?.id} />
           </div>
         </main>

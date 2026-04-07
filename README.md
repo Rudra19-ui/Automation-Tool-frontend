@@ -1,95 +1,99 @@
-# Automater: Node-Based Workflow Automation Tool
+# Automater - Node-Based Workflow Automation Tool
 
-Automater is a powerful, visual, node-based workflow automation tool. It features a modern React frontend and a robust Django REST backend, designed for easy deployment and scalability.
+Automater is a powerful, web-based workflow builder that allows users to create automation pipelines using a drag-and-drop node editor. Built with **React** on the frontend and **Django (Python)** on the backend, it enables seamless data flow between various automation steps.
 
-## 📁 Project Structure
+## � Key Features
 
-This is a **Monorepo** containing both the frontend and backend:
-
-- `frontend/`: React + Vite application (Workflow Builder UI).
-- `backend/`: Django REST Framework (API, Workflow Engine, and Database).
-- `Dockerfile`: Unified Docker configuration for production.
-- `docker-compose.yml`: For local containerized development.
-- `render.yaml`: Configuration for one-click deployment on Render.
-
----
-
-## 💻 Requirements
-
-To run this project locally, ensure you have the following installed:
-
-- **Node.js**: v18 or higher
-- **Python**: v3.12 or higher
-- **Git**: For version control
-- **Docker & Docker Compose** (Optional, but recommended for production-like environments)
+- **Drag-and-Drop Editor**: Intuitive canvas built with `reactflow`.
+- **Diverse Node Types**:
+  - ⚡ **Trigger Node**: Start your workflow with custom initial data.
+  - 🌐 **HTTP Request**: Call external APIs (GET, POST, etc.).
+  - ⚖️ **Condition Node**: Branching logic based on data fields.
+  - 📧 **Email Node**: Bulk email sending (up to 500) with Excel support and personalization.
+  - ✨ **AI Node**: Intelligent data processing using GPT models.
+  - 📜 **Logger Node**: Detailed execution tracking.
+- **Bulk Email Automation**:
+  - Support for manual recipients (up to 5) or Excel upload (`.xlsx`).
+  - Dynamic content using `{{name}}` placeholders.
+  - Smart batching (20 emails/batch) to prevent SMTP throttling.
+- **Real-Time Monitoring**: Interactive execution timeline with detailed logs, error hints, and resizable panels.
 
 ---
 
-## 🚀 Local Development (Manual Setup)
+## �️ Prerequisites
 
-Follow these steps to run both parts of the application as separate services.
+Before running the project, ensure you have the following installed:
+- **Python 3.10+**
+- **Node.js 18+** & **npm**
+- **Gmail Account** (for Email Automation)
+
+---
+
+## ⚙️ Setup & Installation
 
 ### 1. Backend Setup (Django)
-```bash
-cd backend
-python -m venv venv
-# On Windows:
-.\venv\Scripts\activate
-# On Linux/macOS:
-source venv/bin/activate
-
-pip install -r requirements.txt
-python manage.py migrate
-python manage.py runserver
-```
-The backend will be available at `http://localhost:8000`.
+1. Navigate to the backend directory:
+   ```bash
+   cd backend
+   ```
+2. Install Python dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
+3. Create a `.env` file in the `backend/` folder:
+   ```env
+   EMAIL_USER=your-email@gmail.com
+   EMAIL_PASS=your-app-password
+   OPENAI_API_KEY=your-api-key (optional)
+   ```
+   > **Note**: For Gmail, you must use an **App Password** if 2-Step Verification is enabled.
+4. Run migrations:
+   ```bash
+   python manage.py migrate
+   ```
+5. Start the backend server:
+   ```bash
+   python manage.py runserver
+   ```
 
 ### 2. Frontend Setup (React)
-Open a new terminal window:
-```bash
-cd frontend
-npm install
-npm run dev
-```
-The frontend will be available at `http://localhost:5173`.
+1. Navigate to the frontend directory:
+   ```bash
+   cd frontend
+   ```
+2. Install Node dependencies:
+   ```bash
+   npm install
+   ```
+3. Start the development server:
+   ```bash
+   npm run dev
+   ```
 
 ---
 
-## 🐳 Running with Docker
+## 🧪 How to Use
 
-You can run the entire system with a single command using Docker. This is the closest environment to the production deployment.
-
-```bash
-docker-compose up --build
-```
-- **App URL**: `http://localhost:8080` (Both frontend and backend on one port)
-
----
-
-## 🌍 Deployment on Render
-
-This project is optimized for **Render Blueprint** deployment.
-
-1.  Push this code to your GitHub repository.
-2.  Go to your [Render Dashboard](https://dashboard.render.com).
-3.  Click **"New +"** and select **"Blueprint"**.
-4.  Connect your GitHub repository.
-5.  Render will detect the `render.yaml` and prompt you to create the `automation-tool-all-in-one` service.
-6.  Click **"Apply"**.
+1. Open your browser to `http://localhost:5173`.
+2. **Build**: Drag nodes from the sidebar onto the canvas.
+3. **Connect**: Link the output of one node to the input of another.
+4. **Configure**: Click a node to open the "Node Settings" panel on the right.
+5. **Run**: Click the **Run Workflow** button at the top right.
+6. **Debug**: Use the **Execution Timeline** at the bottom to see progress and fix any errors using the provided hints.
 
 ---
 
-## 🛠️ Key Commands Summary
+## � Requirements Summary
 
-| Task | Command |
-| :--- | :--- |
-| **Backend Migration** | `python manage.py migrate` |
-| **Backend Start** | `python manage.py runserver` |
-| **Frontend Install** | `npm install` |
-| **Frontend Start** | `npm run dev` |
-| **Full Build (Docker)**| `docker-compose up --build` |
+### Backend (`backend/requirements.txt`)
+- `django`: Web framework.
+- `djangorestframework`: API toolkit.
+- `python-dotenv`: Environment variable management.
+- `openpyxl`: Excel file parsing for bulk emails.
+- `nodemailer`: SMTP email delivery.
 
----
-
-## 📝 License
-This project is for demonstration and development purposes.
+### Frontend (`frontend/package.json`)
+- `reactflow`: Workflow canvas engine.
+- `axios`: API communication.
+- `tailwindcss`: Modern styling.
+- `vite`: Fast development environment.

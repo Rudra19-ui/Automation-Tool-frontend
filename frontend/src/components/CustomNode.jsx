@@ -8,6 +8,7 @@ const icons = {
     delay: "⏱️",
     logger: "📜",
     ai: "✨",
+    email: "📧",
 };
 
 const colors = {
@@ -17,6 +18,7 @@ const colors = {
     delay: "border-gray-400 bg-gray-50",
     logger: "border-green-400 bg-green-50",
     ai: "border-purple-400 bg-purple-50",
+    email: "border-red-400 bg-red-50",
 };
 
 function CustomNode({ data, type, selected }) {
@@ -27,6 +29,7 @@ function CustomNode({ data, type, selected }) {
         delay: "from-slate-400 to-slate-600 shadow-slate-100",
         logger: "from-emerald-400 to-teal-600 shadow-emerald-100",
         ai: "from-indigo-400 to-violet-600 shadow-indigo-100",
+        email: "from-rose-500 to-red-600 shadow-red-100",
     };
 
     return (

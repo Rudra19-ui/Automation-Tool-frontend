@@ -85,10 +85,28 @@ def execute_workflow(workflow_json: Dict[str, Any], wf: Workflow = None):
             try:
                 # Core execution
                 output = executor(config=config, input_data=final_output, context=context)
+                
+                # Check for structured error in the output
+                if isinstance(output, dict) and output.get("status") == "error":
+                    logs = log_entry(logs, cid, node_type, final_output, output, "failed", started)
+                    # If it's an error, we stop the workflow and record it in the execution log
+                    if exec_log:
+                        exec_log.status = "failed"
+                        exec_log.error_message = output.get("message", "Node execution failed")
+                        exec_log.finished_at = timezone.now()
+                        exec_log.logs = logs
+                        exec_log.save()
+                    return {"status": "failed", "error": output.get("message", "Node execution failed"), "logs": logs}
+
                 final_output = output
                 logs = log_entry(logs, cid, node_type, final_output, output, "success", started)
             except Exception as e:
                 logs = log_entry(logs, cid, node_type, final_output, {"error": str(e)}, "failed", started)
+                if exec_log:
+                    exec_log.status = "failed"
+                    exec_log.error_message = str(e)
+                    exec_log.logs = logs
+                    exec_log.save()
                 raise
 
             next_id = _select_next(adj, cid, final_output)

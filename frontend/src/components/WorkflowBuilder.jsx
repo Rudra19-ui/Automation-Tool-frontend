@@ -17,6 +17,7 @@ const nodeTypes = {
   delay: CustomNode,
   logger: CustomNode,
   ai: CustomNode,
+  email: CustomNode,
 };
 
 const edgeOptions = {
@@ -32,46 +33,61 @@ export default function WorkflowBuilder({ value, onChange, onNodeSelect }) {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
 
-  // Initialize only once or when workflow changes significantly
+  // Initialize or sync when value changes from outside
   useEffect(() => {
-    if (value && nodes.length === 0) {
-      setNodes(value.nodes || []);
-      setEdges(value.edges || []);
+    if (value) {
+      // Only update if the number of nodes/edges changed or if we're not currently interacting
+      // This prevents the "snapping back" behavior during drags
+      const currentNodesIds = nodes.map(n => n.id).join(',');
+      const incomingNodesIds = (value.nodes || []).map(n => n.id).join(',');
+      
+      const currentEdgesIds = edges.map(e => e.id).join(',');
+      const incomingEdgesIds = (value.edges || []).map(e => e.id).join(',');
+
+      if (currentNodesIds !== incomingNodesIds || currentEdgesIds !== incomingEdgesIds) {
+        setNodes(value.nodes || []);
+        setEdges(value.edges || []);
+      } else {
+        // Even if IDs are same, data might have changed (from config panel)
+        // We sync data but avoid overwriting positions if possible
+        setNodes((nds) => 
+          nds.map((node) => {
+            const incomingNode = value.nodes?.find((n) => n.id === node.id);
+            if (incomingNode && JSON.stringify(incomingNode.data) !== JSON.stringify(node.data)) {
+              return { ...node, data: incomingNode.data };
+            }
+            return node;
+          })
+        );
+      }
     }
-  }, [value, setNodes, setEdges, nodes.length]);
+  }, [value]);
 
   const onConnect = useCallback(
     (params) => {
-      setEdges((eds) => {
-        const newEdges = addEdge({
-          ...params,
-          ...edgeOptions,
-          id: `e-${params.source}-${params.target}-${Date.now()}`
-        }, eds);
-        onChange && onChange({ nodes, edges: newEdges });
-        return newEdges;
-      });
+      const newEdges = addEdge({
+        ...params,
+        ...edgeOptions,
+        id: `e-${params.source}-${params.target}-${Date.now()}`
+      }, edges);
+      setEdges(newEdges);
+      onChange && onChange({ nodes, edges: newEdges });
     },
-    [nodes, onChange, setEdges]
+    [nodes, edges, onChange, setEdges]
   );
 
-  const onInternalNodesChange = useCallback((changes) => {
-    onNodesChange(changes);
-    // Only sync back to parent on structural changes or drag end
-    if (changes.some(c => c.type === 'remove' || c.type === 'position' || c.type === 'add')) {
-      // Debounce or wait for position to settle
-      if (changes.some(c => c.dragging === false || c.type === 'remove')) {
-        onChange && onChange({ nodes, edges });
-      }
-    }
-  }, [onNodesChange, nodes, edges, onChange]);
+  const onNodeDragStop = useCallback(() => {
+    onChange && onChange({ nodes, edges });
+  }, [nodes, edges, onChange]);
 
   const onNodesDelete = useCallback((deleted) => {
     const deletedIds = deleted.map(n => n.id);
     const nextNodes = nodes.filter(n => !deletedIds.includes(n.id));
     const nextEdges = edges.filter(e => !deletedIds.includes(e.source) && !deletedIds.includes(e.target));
+    setNodes(nextNodes);
+    setEdges(nextEdges);
     onChange && onChange({ nodes: nextNodes, edges: nextEdges });
-  }, [nodes, edges, onChange]);
+  }, [nodes, edges, onChange, setNodes, setEdges]);
 
   const onDragOver = useCallback((event) => {
     event.preventDefault();
@@ -105,10 +121,11 @@ export default function WorkflowBuilder({ value, onChange, onNodeSelect }) {
       <ReactFlow
         nodes={nodes}
         edges={edges}
-        onNodesChange={onInternalNodesChange}
+        onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
         onNodeClick={(evt, node) => onNodeSelect && onNodeSelect(node)}
+        onNodeDragStop={onNodeDragStop}
         onNodesDelete={onNodesDelete}
         nodeTypes={nodeTypes}
         fitView

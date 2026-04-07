@@ -5,6 +5,7 @@ const nodeTypes = [
   { type: "delay", label: "Delay", icon: "⏱️", description: "Wait for seconds" },
   { type: "logger", label: "Logger", icon: "📜", description: "Log message" },
   { type: "ai", label: "AI Node", icon: "✨", description: "AI processing" },
+  { type: "email", label: "Email", icon: "📧", description: "Send email" },
 ];
 
 export default function NodeSidebar({ onAdd }) {

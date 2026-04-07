@@ -4,7 +4,10 @@ import { getLogs } from "../api/workflowApi";
 export default function ExecutionLogs({ workflowId }) {
   const [logs, setLogs] = useState([]);
   const [expandedLog, setExpandedLog] = useState(null);
+  const [isUserScrolling, setIsUserScrolling] = useState(false);
   const logEndRef = useRef(null);
+  const scrollContainerRef = useRef(null);
+  const scrollTimeoutRef = useRef(null);
 
   useEffect(() => {
     let mounted = true;
@@ -23,9 +26,35 @@ export default function ExecutionLogs({ workflowId }) {
     };
   }, [workflowId]);
 
+  // Handle auto-scroll only if user is not actively scrolling up
   useEffect(() => {
-    logEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [logs]);
+    if (!isUserScrolling) {
+      logEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [logs, isUserScrolling]);
+
+  const handleScroll = () => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    // Check if user is at the bottom (within a small threshold)
+    const isAtBottom = container.scrollHeight - container.scrollTop <= container.clientHeight + 100;
+    
+    if (!isAtBottom) {
+      setIsUserScrolling(true);
+      
+      // Clear previous timeout
+      if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
+      
+      // Resume auto-scroll after 5 seconds of inactivity
+      scrollTimeoutRef.current = setTimeout(() => {
+        setIsUserScrolling(false);
+      }, 5000);
+    } else {
+      setIsUserScrolling(false);
+      if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
+    }
+  };
 
   return (
     <div className="flex flex-col h-full bg-white border-t border-slate-200 shadow-2xl z-30 font-display">
@@ -34,13 +63,27 @@ export default function ExecutionLogs({ workflowId }) {
           <div className="w-2.5 h-2.5 bg-blue-500 rounded-full animate-ping" />
           <h2 className="text-sm font-black text-slate-800 uppercase tracking-[0.2em]">Execution Timeline</h2>
         </div>
-        <div className="flex items-center space-x-2 text-[10px] font-bold text-slate-300 uppercase tracking-widest">
-          <span>Live Sync</span>
-          <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full mr-1.5 animate-pulse" />
+        <div className="flex items-center space-x-4 text-[10px] font-bold uppercase tracking-widest">
+          {isUserScrolling && (
+            <button 
+              onClick={() => setIsUserScrolling(false)}
+              className="text-blue-500 hover:underline animate-pulse"
+            >
+              Resume Auto-Scroll
+            </button>
+          )}
+          <div className="flex items-center text-slate-300">
+            <span>Live Sync</span>
+            <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full ml-1.5 animate-pulse" />
+          </div>
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-10">
+      <div 
+        ref={scrollContainerRef}
+        onScroll={handleScroll}
+        className="flex-1 overflow-y-auto p-10"
+      >
         {logs.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center text-slate-200">
             <div className="text-6xl mb-6">📡</div>
@@ -63,7 +106,7 @@ export default function ExecutionLogs({ workflowId }) {
                   <div className="flex items-center justify-between">
                     <div>
                       <div className="flex items-center space-x-3 mb-1">
-                        <span className="text-sm font-black text-slate-800 tracking-tight">Run {l.id.slice(-6).toUpperCase()}</span>
+                        <span className="text-sm font-black text-slate-800 tracking-tight">Run {String(l.id).slice(-6).toUpperCase()}</span>
                         <span className={`text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest ${l.status === "success" ? "bg-emerald-50 text-emerald-600" :
                             l.status === "failed" ? "bg-red-50 text-red-600" : "bg-blue-50 text-blue-600"
                           }`}>
@@ -105,7 +148,7 @@ export default function ExecutionLogs({ workflowId }) {
                                   </div>
                                 </div>
                                 <div className="text-[10px] font-black text-white/30 tracking-widest uppercase">
-                                  {(entry.duration * 1000).toFixed(0)} ms
+                                  {entry.execution_time_ms ? `${entry.execution_time_ms} ms` : '0 ms'}
                                 </div>
                               </div>
                               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -126,6 +169,40 @@ export default function ExecutionLogs({ workflowId }) {
                                   </div>
                                 </div>
                               </div>
+
+                              {entry.status === "failed" && entry.output && (
+                                <div className="mt-6 bg-red-500/5 border border-red-500/10 rounded-2xl p-6 space-y-4">
+                                  <div className="flex items-center space-x-3 text-red-400">
+                                    <span className="text-lg">❌</span>
+                                    <span className="text-[10px] font-black uppercase tracking-widest">{entry.node_type} Failed</span>
+                                  </div>
+                                  
+                                  {entry.output.message && (
+                                    <div>
+                                      <div className="text-[9px] text-red-400/50 uppercase font-black tracking-widest mb-1">Reason</div>
+                                      <div className="text-xs text-red-200 font-bold">{entry.output.message}</div>
+                                    </div>
+                                  )}
+
+                                  {entry.output.error && (
+                                    <div>
+                                      <div className="text-[9px] text-red-400/50 uppercase font-black tracking-widest mb-1">Error Detail</div>
+                                      <div className="text-[11px] text-red-300/70 font-mono">{entry.output.error}</div>
+                                    </div>
+                                  )}
+
+                                  {entry.output.hint && (
+                                    <div className="bg-red-500/10 rounded-xl p-4 border border-red-500/10">
+                                      <div className="text-[9px] text-emerald-400 uppercase font-black tracking-widest mb-1 flex items-center">
+                                        <span className="mr-2">💡</span> Suggestion
+                                      </div>
+                                      <div className="text-xs text-emerald-100 font-medium italic">
+                                        {entry.output.hint}
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
                             </div>
                           ))}
                         </div>
