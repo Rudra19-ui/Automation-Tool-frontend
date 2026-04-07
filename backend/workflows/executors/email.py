@@ -81,7 +81,7 @@ def execute_email(config, input_data, context):
             "node": "email",
             "message": "SMTP Configuration missing",
             "error": "EMAIL_USER or EMAIL_PASS not set",
-            "hint": "Check your .env file credentials."
+            "hint": "Please add EMAIL_USER and EMAIL_PASS to your Environment Variables (Render dashboard)."
         }
 
     # --- Bulk Sending with Batching ---
